@@ -422,6 +422,11 @@ for( my $s=0; $s<=$#subs; $s++ ) {
 		# (AFAIK there are no words in English starting with "ln", "ls", etc).
 		# Take care not to break e.g. "nice-looking", so don't just assume '-' marks a new word.
 		$subs[$s] =~ s/(^-?|\s-?|[.…"“])l([ '’.,fnst]|$)/$1I$2/gm;
+
+		##### CV ADDITION.  Same as above with capital "L"
+		$subs[$s] =~ s/(^-?|\s-?|[.…"“])L([ '’.,fnst]|$)/$1I$2/gm;
+		#####
+
 		# OCR programs also often drop spaces around 'f' or 'j'. Fixing all these is difficult,
 		# but we can be sure no English words start with any character followed by "fj".
 		$subs[$s] =~ s/(^|\s|[.-…"“])(\w)fj/$1$2f j/gm;
@@ -442,21 +447,43 @@ for( my $s=0; $s<=$#subs; $s++ ) {
 	}
 	if($bNukeHA) {
 		# Remove simple hearing-impaired annotations like "(CLEARS THROAT)" or "[NOISE]"
-		$subs[$s] =~ s/\([A-Z0-9 ,.\-'"\&\n]+?\)//g;
-		$subs[$s] =~ s/\[[A-Z0-9 ,.\-'"\&\n]+?\]//g;
+		$subs[$s] =~ s/\([A-Z0-9 ,.\-‐'"\&\n]+?\)//g;
+		$subs[$s] =~ s/\[[A-Z0-9 ,.\-‐'"\&\n]+?\]//g;
 		if($bNukeHarder) { # Case insensitive and more varied formatting
-			$subs[$s] =~ s/-? ?\([A-Z0-9 ,.!\-'"\&\/\n]+?\)//gi;
-			$subs[$s] =~ s/-? ?\[[A-Z0-9 ,.!\-'"\&\/\n]+?\]//gi;
+			$subs[$s] =~ s/[-‐]? ?\([A-Z0-9 ,.!\-'"\&\/\n]+?[\):]{1,2} ?//gi;
+			$subs[$s] =~ s/[-‐]? ?\[[A-Z0-9 ,.!\-'"\&\/\n]+?[\]:]{1,2} ?//gi;
 			# "Name: Text" on new line, should therefore become "- Text"
-			$subs[$s] =~ s/^[A-Z0-9 '"#]+?: /- /mgi;
+			$subs[$s] =~ s/^[A-Z0-9 '"#]{2,4}?: //mgi;
+
+			# remove music symbols
+			$subs[$s] =~ s/ *♪+ *//gi;
+
+
 			# This has a high risk of affecting regular lines, therefore keep it case sensitive. TODO: improve
-			$subs[$s] =~ s/[A-Z0-9 '"#]+?: *$//mg;
-			$subs[$s] =~ s/^-[A-Z0-9 '"#]+?: /- /mgi;
-			$subs[$s] =~ s/^[A-Z0-9 '"#]+?: //mgi;
+
+			### CHRIS TWEAKED
+			$subs[$s] =~ s/^[-‐][A-Z0-9 '"#]{1,20}?: //mgi;
+			$subs[$s] =~ s/^[A-Z0-9'"#]{1,20}?: //mgi;  #limit search to 20 when spaces are excluded
+			$subs[$s] =~ s/^[A-Z0-9 '"#]{1,7}?: //mgi;  # shorter search before colon if spaces are included
+			$subs[$s] =~ s/[A-Z0-9 '"#]+?: *$//mg;   # must be all caps if its in the middle of the line
+
+
+			#################################
+			### chris additions
+
+			# remove () or [] by itself
+			$subs[$s] =~ s/^[\(\[][\)\]]//ig;
+			# # also any of these by themselves on a line
+
+
+			# remove leading "- " from subs
+			$subs[$s] =~ s/^[-‐_] ?//ig;
+			$subs[$s] =~ s/\n[-‐_] ?/\n/ig;
+			#$subs[$s] =~ s/^[-‐] ?//ig;
 		}
 		else {
-			# "NAME: Text" on new line, should therefore become "- Text"
-			$subs[$s] =~ s/^[A-Z0-9 '"#]+?: /- /mg;
+			# "NAME: Text" on new line, should therefore become "Text"  # <--- CV tweak
+			$subs[$s] =~ s/^[A-Z0-9 '"#]+?: //mg;
 			$subs[$s] =~ s/[A-Z0-9 '"#]+?:[ \n]//g;
 		}
 		$subs[$s] =~ s/^\n+([^\n])/$1/g; # Remove trailing empty lines
